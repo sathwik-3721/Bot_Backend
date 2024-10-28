@@ -1,10 +1,13 @@
 const express = require("express");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const dotenv = require('dotenv');
+const cors = require('cors');
 
 dotenv.config();    
 
 const app = express();
+
+app.use(cors());
 
 app.use(express.json());
 
