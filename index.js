@@ -34,9 +34,14 @@ app.post('/get-response', async(req, res) => {
 
         // return the response as json
         return res.status(200).json({ success: true, botResponse: botResponse });
-    } catch(err) {
-        return res.status(500).json({ success: false, message: 'Internal server error occured. Please try again after some time', error: err});
-    }
+    } catch (err) {
+        console.error('Error occurred:', err.response?.data || err.message);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Internal Server Error', 
+            error: err.response?.data || err.message 
+        });
+    }  
 });
 
 // Start the server
