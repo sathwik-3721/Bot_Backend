@@ -1,7 +1,8 @@
-const express = require("express");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const dotenv = require('dotenv');
-const cors = require('cors');
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import appendToPDF from './utils/helper.js'; // Import the helper function
 
 dotenv.config();    
 
@@ -15,6 +16,7 @@ app.post('/get-response', async(req, res) => {
     try {
         // get the message from body
         const userMessage = req.body.userMessage;
+        console.log('um', userMessage);
 
         // initialize gemini model
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -31,6 +33,9 @@ app.post('/get-response', async(req, res) => {
         // get the response from the model
         const result = await model.generateContent(prompt);
         const botResponse = result.response.text();
+
+        // use function to save it in pdf
+        appendToPDF(userMessage, botResponse);
 
         // return the response as json
         return res.status(200).json({ success: true, botResponse: botResponse });
