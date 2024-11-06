@@ -1,7 +1,9 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import fs from 'fs';
+import axios from 'axios';
+import FormData from 'form-data';  // Import form-data package
 
-async function appendToPDF(question, answer) {
+export default async function appendToPDF(question, answer) {
     const filePath = './session/userSession.pdf';
     const existingPdfBytes = fs.readFileSync(filePath);
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
@@ -64,4 +66,26 @@ async function appendToPDF(question, answer) {
     fs.writeFileSync(filePath, modifiedPdfBytes);
 }
 
-export default appendToPDF;
+export async function uploadPDF(filePath) {
+    let uploadedURL = '';
+    const cloudinaryURL = `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload`;
+    // Create form data
+    const form = new FormData();
+    form.append('file', fs.createReadStream(filePath));  // Attach your PDF file
+    form.append('upload_preset', 'rzkkge3i'); // Set up an unsigned upload preset in your Cloudinary account
+
+    try {
+        const response = await axios.post(cloudinaryURL, form, {
+            headers: {
+                ...form.getHeaders(),
+                Authorization: `Basic ${Buffer.from(`${process.env.CLOUDINARY_API_KEY}:${process.env.CLOUDINARY_API_SECRET}`).toString('base64')}`
+            }
+        });
+        uploadedURL = response.data.secure_url;
+        console.log('Upload Successful:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Upload Failed:', error);
+    }
+}
+
