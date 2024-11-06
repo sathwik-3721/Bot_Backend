@@ -11,13 +11,10 @@ export async function getResopnse(req, res) {
 
         // initialize gemini model
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: process.env.MODEL });
 
         // prompt for answering questions
-        const prompt = `You are an expert in giving optimal and best answer without using any symbols or emojis for questions asked by the user. 
-                        Now your task is to provide the best answer for the given question by the user. 
-                        The question might be related to anything. Make sure that your answer muat not contain any emojis. 
-                        The question you must answer is: ${userMessage}`;
+        const prompt = process.env.PROMPT + `${userMessage}`;
                     
         // console.log('pro', prompt);
 
