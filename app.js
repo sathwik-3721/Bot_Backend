@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import chatRoutes from './routes/chat.routes.js';
 import testRoutes from './routes/test.routes.js';
+import sessionRoutes from './routes/session.routes.js';
 
 dotenv.config();    
 
@@ -20,6 +21,8 @@ app.get('/', (req, res) => {
 app.use('/chat', chatRoutes);
 
 app.use('/test', testRoutes);
+
+app.use('/session', sessionRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 3000;
