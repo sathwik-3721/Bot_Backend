@@ -1,8 +1,9 @@
-import dotenv from 'dotenv';
-import path from 'path';
 import { Storage } from '@google-cloud/storage';
+import { enableCORS } from '../utils/helper.js';
 import { fileURLToPath } from 'url'; 
 import { dirname } from 'path';
+import dotenv from 'dotenv';
+import path from 'path';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -21,6 +22,9 @@ const storage = new Storage({
 
 export const uploadSession = async (req, res) => {
     try {
+        // enable the cors by calling the function
+        enableCORS();
+        
         // Define the file path and destination within the bucket
         const filePath = path.join(__dirname, '../session/userSession.pdf'); // Adjust path to the PDF file
         const destination = 'session/userSession.pdf';

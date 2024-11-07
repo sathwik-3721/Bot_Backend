@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import appendToPDF from '../utils/helper.js';
+import { appendToPDF } from '../utils/helper.js';
 dotenv.config();
 
 export async function getResopnse(req, res) {

@@ -1,7 +1,28 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { Storage } from '@google-cloud/storage';
+import { fileURLToPath } from 'url'; 
+import { dirname } from 'path';
+import dotenv from 'dotenv';
+import path from 'path';
 import fs from 'fs';
 
-export default async function appendToPDF(question, answer) {
+// load env variables
+dotenv.config();
+
+// get the bucket name from the env
+const bucketName = process.env.BUCKET_NAME;
+
+// Get the directory name from import.meta.url
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// stotage initialize 
+const storage = new Storage({
+    projectId: process.env.PROJECT_ID,
+    keyFilename: path.join(__dirname, '../service_account.json') // Adjust path to root directory
+});
+
+export async function appendToPDF(question, answer) {
     const filePath = './session/userSession.pdf';
     const existingPdfBytes = fs.readFileSync(filePath);
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
@@ -62,4 +83,25 @@ export default async function appendToPDF(question, answer) {
     // Save and write the modified PDF
     const modifiedPdfBytes = await pdfDoc.save();
     fs.writeFileSync(filePath, modifiedPdfBytes);
+}
+
+// helper function to enable cors for it
+export async function enableCORS() {
+    try {
+        const bucket = storage.bucket(bucketName);
+
+        // define the cors config
+        const corsConfig = [
+            {
+                origin: ['*'], // allow all origin requests
+                method: ['GET', 'PUT', 'POST', 'DELETE'], // allowed methods
+            },
+        ];
+
+        // set the cors configuration for the bucket
+        await bucket.setCorsConfiguration(corsConfig);
+        console.log('CORS configuration has been set for the bucket');
+    } catch(error) {
+        console.error('Error enabling CORS:', error.message);
+    }
 }
