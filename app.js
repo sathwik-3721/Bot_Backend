@@ -1,9 +1,9 @@
+import sessionRoutes from './routes/session.routes.js';
+import chatRoutes from './routes/chat.routes.js';
+import testRoutes from './routes/test.routes.js';
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import chatRoutes from './routes/chat.routes.js';
-import testRoutes from './routes/test.routes.js';
-import sessionRoutes from './routes/session.routes.js';
 
 dotenv.config();    
 
