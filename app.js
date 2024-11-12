@@ -1,4 +1,5 @@
 import sessionRoutes from './routes/session.routes.js';
+import dealerRoutes from './routes/dealer.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import testRoutes from './routes/test.routes.js';
 import express from 'express';
@@ -24,8 +25,10 @@ app.use('/test', testRoutes);
 
 app.use('/session', sessionRoutes);
 
+app.use('/dealer', dealerRoutes);
+
 // Start the server
-const PORT = process.env.PORT || 3000;
+const PORT_NAME = process.env.PORT_NAME || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on http://localhost:${PORT_NAME}`);
 });

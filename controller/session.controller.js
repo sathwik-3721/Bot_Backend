@@ -20,7 +20,7 @@ const storage = new Storage({
     keyFilename: path.join(__dirname, '../service_account.json') // Adjust path to root directory
 });
 
-export const uploadSession = async (req, res) => {
+export async function uploadSession(req, res) {
     try {
         // enable the cors by calling the function
         enableCORS();

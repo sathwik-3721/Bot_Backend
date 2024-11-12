@@ -1,6 +1,6 @@
-import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { appendToPDF } from '../utils/helper.js';
+import { appendChatToPDF } from '../utils/helper.js';
+import dotenv from 'dotenv';
 dotenv.config();
 
 export async function getResopnse(req, res) {
@@ -23,7 +23,7 @@ export async function getResopnse(req, res) {
         const botResponse = result.response.text();
 
         // use function to save it in pdf
-        appendToPDF(userMessage, botResponse);
+        appendChatToPDF(userMessage, botResponse);
 
         // return the response as json
         return res.status(200).json({ success: true, botResponse: botResponse });
