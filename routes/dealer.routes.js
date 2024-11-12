@@ -1,7 +1,7 @@
 import express from 'express';
-import { appendDealerInfo } from '../controller/dealer.controller';
+import { appendDealerInfo } from '../controller/dealer.controller.js';
 
-const router = express.router();
+const router = express.Router();
 
 router.route('/appendDealerInfo')
     .post(appendDealerInfo)

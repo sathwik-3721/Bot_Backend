@@ -29,6 +29,6 @@ app.use('/dealer', dealerRoutes);
 
 // Start the server
 const PORT_NAME = process.env.PORT_NAME || 3000;
-app.listen(PORT, () => {
+app.listen(PORT_NAME, () => {
   console.log(`Server is running on http://localhost:${PORT_NAME}`);
 });

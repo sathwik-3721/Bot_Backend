@@ -28,11 +28,11 @@ export async function getResopnse(req, res) {
         // return the response as json
         return res.status(200).json({ success: true, botResponse: botResponse });
     } catch(error) {
-        console.error('Error occurred:', err.response?.data || err.message);
+        console.error('Error occurred:', error.response?.data || error.message);
         return res.status(500).json({ 
             success: false, 
             message: 'Internal Server Error', 
-            error: err.response?.data || err.message 
+            error: error.response?.data || error.message 
         });
     }
 }

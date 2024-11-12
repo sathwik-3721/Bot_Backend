@@ -107,29 +107,47 @@ export async function enableCORS() {
     }
 }
 
-// function to delete all the pages except first one
+// function to clear the pdf contents
 export async function clearPDF() {
     try {
-        // get and load the existing pdf 
-        const pdfPath = './session/userSession.pdf';
-        const pdfDoc = await PDFDocument.load(pdfPath);
+        // get the pdf from path
+        const pdfPath = path.resolve('./session/userSession.pdf');
 
-        // copy the first page
-        const [ firstPage ] = await pdfDoc.copyPages(pdfDoc, [0]);
+        if (!fs.existsSync(pdfPath) || fs.statSync(pdfPath).size === 0) {
+            console.error("PDF file not found or is empty at path:", pdfPath);
+            return;
+        }
 
-        // create a new pdf and add the blank page and save it
-        const newPdfDoc = await PDFDocument.create();
-        newPdfDoc.addPage(firstPage);
-        const newPDF = await newPdfDoc.save();
+        const pdfBytes = fs.readFileSync(pdfPath);
 
-        // save the pdf into existing path
-        fs.writeFileSync(pdfPath, newPDF);
+        if (!pdfBytes.slice(0, 4).equals(Buffer.from('%PDF'))) {
+            console.error("The file does not have a valid PDF header. It may not be a PDF.");
+            return;
+        }
 
-        console.log('Removed all pages and stored it in existing path')
-    } catch(error) {
-        console.error('Error while clearing the pages of PDF', error.message);
+        // load the file
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const pages = pdfDoc.getPages();
+
+        if (pages.length <= 1) {
+            console.log('PDF has one or no pages; no need to clear additional pages.');
+            return;
+        }
+
+        // remove all pages except the first one
+        for (let i = 1; i < pages.length; i++) {
+            pdfDoc.removePage(pages.length - i);
+        }
+
+        const newPDFBytes = await pdfDoc.save();
+        fs.writeFileSync(pdfPath, newPDFBytes);
+
+        console.log('Cleared PDF except for the first page');
+    } catch (error) {
+        console.error('Error while clearing the pages of PDF:', error);
     }
 }
+
 
 // function to delete the existing file in the bucket
 export async function deletePDF() {
@@ -146,15 +164,16 @@ export async function deletePDF() {
     }
 }
 
-export async function appendDealerInfo(dealerName, dealerInfo, dealerNumber) {
-    const pdfPath = './session/userSession.pdf';
+export async function appendDealerInfoToPDF(dealerName, dealerInfo, dealerNumber) {
     try {
+        // get and load the pdf file
+        const pdfPath = path.resolve('./session/userSession.pdf');
         const existingPdfBytes = fs.readFileSync(pdfPath);
         const pdfDoc = await PDFDocument.load(existingPdfBytes);
 
         // get first page and add the data
         const page = pdfDoc.getPages()[0];
-        const { width, height } = pages.getSize();
+        const { width, height } = page.getSize();
 
         const textContent = `
                     Dealer Name: ${dealerName}
@@ -175,6 +194,6 @@ export async function appendDealerInfo(dealerName, dealerInfo, dealerNumber) {
         fs.writeFileSync(pdfPath, pdfBytes);
         console.log('Dealer Info added into file');
     } catch(error) {
-        console.error('Error while appending dealer info into PDF', error.message);
+        console.error('Error while appending dealer info into PDF', error);
     }
 }
