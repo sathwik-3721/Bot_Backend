@@ -1,4 +1,4 @@
-import { enableCORS, deletePDF } from '../utils/helper.js';
+import { enableCORS, deletePDF, clearPDF, getPdfFileNames } from '../utils/helper.js';
 import { Storage } from '@google-cloud/storage';
 import { fileURLToPath } from 'url'; 
 import { dirname } from 'path';
@@ -27,10 +27,14 @@ export async function uploadSession(req, res) {
 
         // delete the existing chat session
         await deletePDF();
+
+        // get the pdf name from the local
+        const sessionPDF = await getPdfFileNames();
+        console.log('ss', sessionPDF);
         
         // Define the file path and destination within the bucket
-        const filePath = path.join(__dirname, '../session/userSession.pdf'); // Adjust path to the PDF file
-        const destination = 'session/userSession.pdf';
+        const filePath = path.join(__dirname, `../session/${sessionPDF}`); // Adjust path to the PDF file
+        const destination = `session/${sessionPDF}`;
 
         // Upload the PDF file to the specified bucket
         await storage.bucket(bucketName).upload(filePath, {
@@ -45,6 +49,7 @@ export async function uploadSession(req, res) {
         const fileUrl = `https://storage.googleapis.com/${bucketName}/${destination}`;
 
         // clear all the existing pdf content
+        await clearPDF();
 
         console.log('File uploaded!');
         return res.status(201).json({ success: true, message: 'File successfully uploaded', url: fileUrl });

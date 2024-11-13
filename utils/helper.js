@@ -24,37 +24,63 @@ const storage = new Storage({
 
 // function to add the user chat into a PDF
 export async function appendChatToPDF(question, answer) {
-    const filePath = './session/userSession.pdf';
-    const existingPdfBytes = fs.readFileSync(filePath);
-    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+    try {
+        // Get the PDF file from the session folder
+        const sessionFolderPath = path.resolve('./session');
+        const files = fs.readdirSync(sessionFolderPath);
 
-    const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-    const timesBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+        // Find the first PDF file in the session folder
+        const pdfFiles = files.filter(file => file.endsWith('.pdf'));
+        if (pdfFiles.length === 0) {
+            throw new Error('No PDF files found in the session folder.');
+        }
 
-    // Create a new page for each question-answer pair
-    const newPage = pdfDoc.addPage();
-    const { width, height } = newPage.getSize();
+        const filePath = path.join(sessionFolderPath, pdfFiles[0]);
+        const existingPdfBytes = fs.readFileSync(filePath);
+        const pdfDoc = await PDFDocument.load(existingPdfBytes);
 
-    // Define the text content
-    const text = `**Question:** ${question}\n**Answer:** ${answer}`;
-    let y = height - 40;
-    const lineHeight = 14;
-    const maxLineWidth = width - 100;  // Leave some padding
+        const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+        const timesBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
 
-    text.split('\n').forEach((line) => {
-        const isBold = line.startsWith('**') && line.endsWith('**');
-        const content = line.replace(/\*\*/g, '');  // Remove '**' markers
-        const font = isBold ? timesBoldFont : timesRomanFont;
-        
-        // Word-wrap logic to split long lines
-        const words = content.split(' ');
-        let lineToDraw = '';
-        
-        words.forEach((word) => {
-            const testLine = lineToDraw + word + ' ';
-            const textWidth = font.widthOfTextAtSize(testLine, 12);
+        // Create a new page for each question-answer pair
+        const newPage = pdfDoc.addPage();
+        const { width, height } = newPage.getSize();
 
-            if (textWidth > maxLineWidth) {
+        // Define the text content
+        const text = `**Question:** ${question}\n**Answer:** ${answer}`;
+        let y = height - 40;
+        const lineHeight = 14;
+        const maxLineWidth = width - 100;  // Leave some padding
+
+        text.split('\n').forEach((line) => {
+            const isBold = line.startsWith('**') && line.endsWith('**');
+            const content = line.replace(/\*\*/g, '');  // Remove '**' markers
+            const font = isBold ? timesBoldFont : timesRomanFont;
+            
+            // Word-wrap logic to split long lines
+            const words = content.split(' ');
+            let lineToDraw = '';
+            
+            words.forEach((word) => {
+                const testLine = lineToDraw + word + ' ';
+                const textWidth = font.widthOfTextAtSize(testLine, 12);
+
+                if (textWidth > maxLineWidth) {
+                    newPage.drawText(lineToDraw, {
+                        x: 50,
+                        y,
+                        size: 12,
+                        font,
+                        color: rgb(0, 0, 0),
+                    });
+                    y -= lineHeight;
+                    lineToDraw = word + ' ';
+                } else {
+                    lineToDraw = testLine;
+                }
+            });
+
+            if (lineToDraw) {
                 newPage.drawText(lineToDraw, {
                     x: 50,
                     y,
@@ -63,27 +89,16 @@ export async function appendChatToPDF(question, answer) {
                     color: rgb(0, 0, 0),
                 });
                 y -= lineHeight;
-                lineToDraw = word + ' ';
-            } else {
-                lineToDraw = testLine;
             }
         });
 
-        if (lineToDraw) {
-            newPage.drawText(lineToDraw, {
-                x: 50,
-                y,
-                size: 12,
-                font,
-                color: rgb(0, 0, 0),
-            });
-            y -= lineHeight;
-        }
-    });
-
-    // Save and write the modified PDF
-    const modifiedPdfBytes = await pdfDoc.save();
-    fs.writeFileSync(filePath, modifiedPdfBytes);
+        // Save and write the modified PDF
+        const modifiedPdfBytes = await pdfDoc.save();
+        fs.writeFileSync(filePath, modifiedPdfBytes);
+        console.log('Chat added to PDF successfully');
+    } catch (error) {
+        console.error('Error while appending chat to PDF', error);
+    }
 }
 
 // helper function to enable cors for it
@@ -107,11 +122,14 @@ export async function enableCORS() {
     }
 }
 
-// function to clear the pdf contents
+// function to delete the pdf contents
 export async function clearPDF() {
     try {
+        // get pdf name
+        const sessionPDF = await getPdfFileNames();
+
         // get the pdf from path
-        const pdfPath = path.resolve('./session/userSession.pdf');
+        const pdfPath = path.resolve(`./session/${sessionPDF}`);
 
         if (!fs.existsSync(pdfPath) || fs.statSync(pdfPath).size === 0) {
             console.error("PDF file not found or is empty at path:", pdfPath);
@@ -124,30 +142,13 @@ export async function clearPDF() {
             console.error("The file does not have a valid PDF header. It may not be a PDF.");
             return;
         }
-
-        // load the file
-        const pdfDoc = await PDFDocument.load(pdfBytes);
-        const pages = pdfDoc.getPages();
-
-        if (pages.length <= 1) {
-            console.log('PDF has one or no pages; no need to clear additional pages.');
-            return;
-        }
-
-        // remove all pages except the first one
-        for (let i = 1; i < pages.length; i++) {
-            pdfDoc.removePage(pages.length - i);
-        }
-
-        const newPDFBytes = await pdfDoc.save();
-        fs.writeFileSync(pdfPath, newPDFBytes);
-
-        console.log('Cleared PDF except for the first page');
+        // delete the pdf
+        fs.unlinkSync(pdfPath);
+        console.log("PDF File deleted from the session");
     } catch (error) {
-        console.error('Error while clearing the pages of PDF:', error);
+        console.error('Error while deleting PDF:', error);
     }
 }
-
 
 // function to delete the existing file in the bucket
 export async function deletePDF() {
@@ -159,21 +160,30 @@ export async function deletePDF() {
         await Promise.all(files.map(file => file.delete()));
 
         console.log('Delete all files in the bucket');
+        const [ files_after ] = await storage.bucket(bucketName).getFiles();
+        console.log('Delete after', files_after);
     } catch(error) {
         console.error('Error while deleting the objects in the bucket', error.message);
     }
 }
 
+// add dealer info to pdf
 export async function appendDealerInfoToPDF(dealerName, dealerInfo, dealerNumber) {
     try {
-        // Get and load the existing PDF file
-        const pdfPath = path.resolve('./session/userSession.pdf');
-        const existingPdfBytes = fs.readFileSync(pdfPath);
-        const pdfDoc = await PDFDocument.load(existingPdfBytes);
+        // Generate a timestamp and construct the new PDF filename
+        const timestamp = Date.now();
+        const pdfFilename = `userSession_${timestamp}.pdf`;
+        const pdfPath = path.resolve(`./session/${pdfFilename}`);
 
-        // Create a new page in the PDF
-        const page = pdfDoc.addPage();
-        const { width, height } = page.getSize();
+        // Create a new PDF document
+        const pdfDoc = await PDFDocument.create();
+
+        // Add an empty first page
+        pdfDoc.addPage();
+
+        // Add a second page for dealer info
+        const secondPage = pdfDoc.addPage();
+        const { width, height } = secondPage.getSize();
 
         // Prepare the text content for the dealer information
         const textContent = `
@@ -182,8 +192,8 @@ export async function appendDealerInfoToPDF(dealerName, dealerInfo, dealerNumber
             Dealer Number: ${dealerNumber}
         `;
 
-        // Add the dealer information on the new page
-        page.drawText(textContent, {
+        // Add the dealer information on the second page
+        secondPage.drawText(textContent, {
             x: 50,
             y: height - 50,
             size: 12,
@@ -193,8 +203,34 @@ export async function appendDealerInfoToPDF(dealerName, dealerInfo, dealerNumber
         // Save the modified PDF
         const pdfBytes = await pdfDoc.save();
         fs.writeFileSync(pdfPath, pdfBytes);
-        console.log('Dealer Info added on a new page in the PDF file');
+        console.log('Dealer Info saved to:', pdfFilename);
+
+        // Store the filename in a variable (could return this variable if needed)
+        const savedFilePath = pdfPath;
+        return savedFilePath; // Return the path if needed
+
     } catch (error) {
-        console.error('Error while appending dealer info into PDF:', error);
+        console.error('Error while creating PDF with dealer info:', error);
+        throw error;
+    }
+}
+
+// get the existing session pdf name
+export async function getPdfFileNames() {
+    try {
+        const sessionFolderPath = path.resolve('./session');
+        
+        // Read all files in the session folder asynchronously
+        const files = await fs.promises.readdir(sessionFolderPath);
+        
+        // Filter out PDF files
+        const pdfFiles = files.filter(file => file.endsWith('.pdf'));
+        
+        // Return the PDF file names
+        console.log('PDF files in the session folder:', pdfFiles);
+        return pdfFiles;
+    } catch (error) {
+        console.error('Error reading PDF files:', error);
+        return [];
     }
 }
