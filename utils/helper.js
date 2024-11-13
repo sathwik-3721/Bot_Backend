@@ -166,34 +166,35 @@ export async function deletePDF() {
 
 export async function appendDealerInfoToPDF(dealerName, dealerInfo, dealerNumber) {
     try {
-        // get and load the pdf file
+        // Get and load the existing PDF file
         const pdfPath = path.resolve('./session/userSession.pdf');
         const existingPdfBytes = fs.readFileSync(pdfPath);
         const pdfDoc = await PDFDocument.load(existingPdfBytes);
 
-        // get first page and add the data
-        const page = pdfDoc.getPages()[0];
+        // Create a new page in the PDF
+        const page = pdfDoc.addPage();
         const { width, height } = page.getSize();
 
+        // Prepare the text content for the dealer information
         const textContent = `
-                    Dealer Name: ${dealerName}
-                    Dealer Info: ${dealerInfo}
-                    Dealer Number: ${dealerNumber}
-                `;
+            Dealer Name: ${dealerName}
+            Dealer Info: ${dealerInfo}
+            Dealer Number: ${dealerNumber}
+        `;
 
-        // add content into pdf 
+        // Add the dealer information on the new page
         page.drawText(textContent, {
             x: 50,
-            y: height - 100,
+            y: height - 50,
             size: 12,
             color: rgb(0, 0, 0),
         });
 
-        // save the file
+        // Save the modified PDF
         const pdfBytes = await pdfDoc.save();
         fs.writeFileSync(pdfPath, pdfBytes);
-        console.log('Dealer Info added into file');
-    } catch(error) {
-        console.error('Error while appending dealer info into PDF', error);
+        console.log('Dealer Info added on a new page in the PDF file');
+    } catch (error) {
+        console.error('Error while appending dealer info into PDF:', error);
     }
 }

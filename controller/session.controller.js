@@ -1,5 +1,5 @@
+import { enableCORS, deletePDF } from '../utils/helper.js';
 import { Storage } from '@google-cloud/storage';
-import { enableCORS } from '../utils/helper.js';
 import { fileURLToPath } from 'url'; 
 import { dirname } from 'path';
 import dotenv from 'dotenv';
@@ -24,6 +24,9 @@ export async function uploadSession(req, res) {
     try {
         // enable the cors by calling the function
         enableCORS();
+
+        // delete the existing chat session
+        await deletePDF();
         
         // Define the file path and destination within the bucket
         const filePath = path.join(__dirname, '../session/userSession.pdf'); // Adjust path to the PDF file
@@ -40,6 +43,8 @@ export async function uploadSession(req, res) {
 
         // Construct the public URL for the uploaded file
         const fileUrl = `https://storage.googleapis.com/${bucketName}/${destination}`;
+
+        // clear all the existing pdf content
 
         console.log('File uploaded!');
         return res.status(201).json({ success: true, message: 'File successfully uploaded', url: fileUrl });
