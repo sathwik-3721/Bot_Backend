@@ -1,4 +1,4 @@
-import { textToSpeech } from '@google-cloud/text-to-speech'
+import textToSpeech from '@google-cloud/text-to-speech';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { Storage } from '@google-cloud/storage';
 import { fileURLToPath } from 'url'; 
@@ -6,6 +6,7 @@ import { dirname } from 'path';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+const { TextToSpeechClient } = textToSpeech;
 
 // load env variables
 dotenv.config();
@@ -249,7 +250,7 @@ export async function generateSpeechBuffer(text) {
             // get the language code and model from env
             voice: { languageCode: process.env.LANGUAGE_CODE, name: process.env.MODEL_NAME, ssmlGender: process.env.SSML_GENDER },
             // select the audio configuration
-            audioConfig: { audioEncoding: process.env.AUDIO_EMCODING },
+            audioConfig: {audioEncoding: 'MP3'},
         };
 
         // perform the request
