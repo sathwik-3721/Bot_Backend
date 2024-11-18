@@ -250,7 +250,7 @@ export async function generateSpeechBuffer(text) {
             // get the language code and model from env
             voice: { languageCode: process.env.LANGUAGE_CODE, name: process.env.MODEL_NAME, ssmlGender: process.env.SSML_GENDER },
             // select the audio configuration
-            audioConfig: {audioEncoding: 'MP3'},
+            audioConfig: {audioEncoding: process.env.AUDIO_ENCODING},
         };
 
         // perform the request
