@@ -1,4 +1,4 @@
-import { appendChatToPDF } from '../utils/helper.js';
+import { appendChatToPDF, textToSpeech } from '../utils/helper.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -20,11 +20,14 @@ export async function getResponse(req, res) {
         const result = await model.generateContent(prompt);
         const botResponse = result.response.text();
 
+        // get the buffer for text by calling the function
+        const audioBuffer = await textToSpeech(botResponse);
+
         // use function to save it in pdf
         appendChatToPDF(userMessage, botResponse);
 
         // return the response as json
-        return res.status(200).json({ success: true, botResponse: botResponse });
+        return res.status(200).json({ success: true, botResponse: botResponse, audioContent: audioBuffer });
     } catch(error) {
         console.error('Error occurred:', error);
         return res.status(500).json({ 

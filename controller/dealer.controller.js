@@ -6,10 +6,10 @@ export async function appendDealerInfo(req, res) {
         await clearPDF();
         
         // get the dealer and other info
-        const { dealerName, dealerInfo, dealerNumber } = req.body;
+        const { dealerIdentificationCode, programType, natureOftheVisit } = req.body;
 
         // call the function to append the dealer data into pdf
-        await appendDealerInfoToPDF(dealerName, dealerInfo, dealerNumber);
+        await appendDealerInfoToPDF(dealerIdentificationCode, programType, natureOftheVisit);
 
         // return the success response
         return res.status(201).json({

@@ -1,3 +1,4 @@
+import { textToSpeech } from '@google-cloud/text-to-speech'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { Storage } from '@google-cloud/storage';
 import { fileURLToPath } from 'url'; 
@@ -11,6 +12,9 @@ dotenv.config();
 
 // get the bucket name from the env
 const bucketName = process.env.BUCKET_NAME;
+
+// initialize the client for text to speech service
+const client = new textToSpeech.TextToSpeechClient({ keyFilename: './service_account.json' });
 
 // Get the directory name from import.meta.url
 const __filename = fileURLToPath(import.meta.url);
@@ -232,5 +236,29 @@ export async function getPdfFileNames() {
     } catch (error) {
         console.error('Error reading PDF files:', error);
         return [];
+    }
+}
+
+// helper function to convert the text into buffer to play it into UI frontend
+export async function textToSpeech(text) {
+    try {
+        // construct the request for API
+        const request = {
+            // passing text as input
+            input: { text: text },
+            // get the language code and model from env
+            voice: { languageCode: process.env.LANGUAGE_CODE, name: process.env.MODEL_NAME, ssmlGender: process.env.SSML_GENDER },
+            // select the audio configuration
+            audioConfig: { audioEncoding: process.env.AUDIO_EMCODING },
+        };
+
+        // perform the request
+        const [response] = await client.synthesizeSpeech(request);
+
+        // return the binary audio content
+        return response.audioContent;
+        
+    } catch(error) {
+        console.error('Error while parsing the text into speech content:', error);
     }
 }
