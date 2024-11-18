@@ -240,7 +240,7 @@ export async function getPdfFileNames() {
 }
 
 // helper function to convert the text into buffer to play it into UI frontend
-export async function textToSpeech(text) {
+export async function generateSpeechBuffer(text) {
     try {
         // construct the request for API
         const request = {
@@ -257,7 +257,7 @@ export async function textToSpeech(text) {
 
         // return the binary audio content
         return response.audioContent;
-        
+
     } catch(error) {
         console.error('Error while parsing the text into speech content:', error);
     }
