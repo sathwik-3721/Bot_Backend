@@ -26,7 +26,7 @@ export async function uploadSession(req, res) {
         enableCORS();
 
         // delete the existing chat session
-        await deletePDF();
+        // await deletePDF();
 
         // get the pdf name from the local
         const sessionPDF = await getPdfFileNames();
