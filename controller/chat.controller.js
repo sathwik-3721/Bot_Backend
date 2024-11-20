@@ -1,7 +1,5 @@
-// import serviceAccount from '../service_account.json' assert { type: 'json'};
 import { appendChatToPDF, generateSpeechBuffer } from '../utils/helper.js';
-// import { GoogleGenerativeAI } from '@google/generative-ai';
-import { VertexAI } from '@google-cloud/vertexai'
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -18,11 +16,11 @@ export async function getResponse(req, res) {
         // authenticate the vertexAI
         // const auth = new GoogleAuth({ keyFilename: path.resolve('./service_account.json')});
 
-        // initialize the vertex ai
+        // // initialize the vertex ai
         // const vertexAI = new VertexAI({ 
         //                         project: process.env.PROJECT_ID, 
         //                         location: process.env.LOCATION, 
-        //                         googleAuthOptions: { credentials: '../service_account.json' }});
+        //                         googleAuthOptions: { credentials: serviceAccount }});
 
         // // initialize the genai model using vertexai
         // const generativeModel = vertexAI.getGenerativeModel({ model: process.env.MODEL })
