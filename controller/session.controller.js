@@ -17,6 +17,7 @@ const __dirname = dirname(__filename);
 // Initialize Google Cloud Storage with the service account key file
 const storage = new Storage({
     projectId: process.env.PROJECT_ID,
+    keyFilename: path.join(__dirname, '../service_account.json') // Adjust path to root directory
 });
 
 export async function uploadSession(req, res) {
