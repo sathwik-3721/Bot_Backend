@@ -38,6 +38,7 @@ export async function getResponse(req, res) {
 
         // get the buffer for text by calling the function
         const audioBuffer = await generateSpeechBuffer(botResponse);
+        console.log('audiobuf', audioBuffer);
 
         // use function to save it in pdf
         appendChatToPDF(userMessage, botResponse);
