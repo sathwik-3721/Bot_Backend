@@ -53,28 +53,28 @@ export async function appendChatToPDF(question, answer) {
 
         // Define the text content
         const text = `**Question:** ${question}\n**Answer:** ${answer}`;
-        let y = height - 40;
-        const lineHeight = 14;
-        const maxLineWidth = width - 100;  // Leave some padding
+        let y = height - 60; // Start 60 units from the top
+        const lineHeight = 20; // Adjust line height for larger font
+        const maxLineWidth = width - 80; // Leave 40 units padding on each side
 
         text.split('\n').forEach((line) => {
             const isBold = line.startsWith('**') && line.endsWith('**');
-            const content = line.replace(/\*\*/g, '');  // Remove '**' markers
+            const content = line.replace(/\*\*/g, ''); // Remove '**' markers
             const font = isBold ? timesBoldFont : timesRomanFont;
-            
+
             // Word-wrap logic to split long lines
             const words = content.split(' ');
             let lineToDraw = '';
-            
+
             words.forEach((word) => {
                 const testLine = lineToDraw + word + ' ';
-                const textWidth = font.widthOfTextAtSize(testLine, 12);
+                const textWidth = font.widthOfTextAtSize(testLine, 16); // Adjust for 16 font size
 
                 if (textWidth > maxLineWidth) {
-                    newPage.drawText(lineToDraw, {
-                        x: 50,
+                    newPage.drawText(lineToDraw.trim(), {
+                        x: 40, // Align text with left padding
                         y,
-                        size: 12,
+                        size: 16, // Set font size to 16
                         font,
                         color: rgb(0, 0, 0),
                     });
@@ -86,10 +86,10 @@ export async function appendChatToPDF(question, answer) {
             });
 
             if (lineToDraw) {
-                newPage.drawText(lineToDraw, {
-                    x: 50,
+                newPage.drawText(lineToDraw.trim(), {
+                    x: 40, // Align text with left padding
                     y,
-                    size: 12,
+                    size: 16, // Set font size to 16
                     font,
                     color: rgb(0, 0, 0),
                 });
@@ -100,7 +100,7 @@ export async function appendChatToPDF(question, answer) {
         // Save and write the modified PDF
         const modifiedPdfBytes = await pdfDoc.save();
         fs.writeFileSync(filePath, modifiedPdfBytes);
-        console.log('Chat added to PDF successfully');
+        console.log('Chat added to PDF successfully with neat alignment and larger font size');
     } catch (error) {
         console.error('Error while appending chat to PDF', error);
     }
@@ -183,6 +183,9 @@ export async function appendDealerInfoToPDF(dealerName, dealerInfo, dealerNumber
         // Create a new PDF document
         const pdfDoc = await PDFDocument.create();
 
+        // Embed the Times Roman font
+        const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+
         // Add an empty first page
         pdfDoc.addPage();
 
@@ -190,19 +193,31 @@ export async function appendDealerInfoToPDF(dealerName, dealerInfo, dealerNumber
         const secondPage = pdfDoc.addPage();
         const { width, height } = secondPage.getSize();
 
-        // Prepare the text content for the dealer information
-        const textContent = `
-            Dealer Name: ${dealerName}
-            Dealer Info: ${dealerInfo}
-            Dealer Number: ${dealerNumber}
-        `;
+        // Set font size and line height
+        const fontSize = 16;
+        const lineHeight = fontSize + 4;
 
-        // Add the dealer information on the second page
-        secondPage.drawText(textContent, {
-            x: 50,
-            y: height - 50,
-            size: 12,
-            color: rgb(0, 0, 0),
+        // Prepare the text content for the dealer information
+        const dealerInfoLines = [
+            `Dealer Name: ${dealerName}`,
+            `Dealer Info: ${dealerInfo}`,
+            `Dealer Number: ${dealerNumber}`,
+        ];
+
+        // Define the starting position for text
+        let y = height - 50; // Start 50 points from the top
+        const x = 50; // Margin from the left
+
+        // Add each line of dealer information to the page
+        dealerInfoLines.forEach((line) => {
+            secondPage.drawText(line, {
+                x,
+                y,
+                size: fontSize,
+                font: timesRomanFont,
+                color: rgb(0, 0, 0),
+            });
+            y -= lineHeight; // Move down for the next line
         });
 
         // Save the modified PDF
@@ -210,9 +225,8 @@ export async function appendDealerInfoToPDF(dealerName, dealerInfo, dealerNumber
         fs.writeFileSync(pdfPath, pdfBytes);
         console.log('Dealer Info saved to:', pdfFilename);
 
-        // Store the filename in a variable (could return this variable if needed)
-        const savedFilePath = pdfPath;
-        return savedFilePath; // Return the path if needed
+        // Return the path of the saved PDF
+        return pdfPath;
 
     } catch (error) {
         console.error('Error while creating PDF with dealer info:', error);
