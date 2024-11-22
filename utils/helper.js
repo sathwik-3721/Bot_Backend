@@ -277,3 +277,12 @@ export async function generateSpeechBuffer(text) {
         console.error('Error while parsing the text into speech content:', error);
     }
 }
+
+// function to store the chat into a JSON array
+export async function storeUserChat(quesiton, answer) {
+    try {
+        
+    } catch(err) {
+        console.error('Error while storing chat into JSON array', err);
+    }
+}

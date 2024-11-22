@@ -1,5 +1,6 @@
+import serviceAccount from '../service_account.json' assert { type: 'json' };
 import { appendChatToPDF, generateSpeechBuffer } from '../utils/helper.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { VertexAI } from '@google-cloud/vertexai';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -10,31 +11,31 @@ export async function getResponse(req, res) {
         // console.log('um', userMessage);
 
         // initialize gemini model
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: process.env.MODEL });
+        // const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        // const model = genAI.getGenerativeModel({ model: process.env.MODEL });
 
         // authenticate the vertexAI
         // const auth = new GoogleAuth({ keyFilename: path.resolve('./service_account.json')});
 
-        // // initialize the vertex ai
-        // const vertexAI = new VertexAI({ 
-        //                         project: process.env.PROJECT_ID, 
-        //                         location: process.env.LOCATION, 
-        //                         googleAuthOptions: { credentials: serviceAccount }});
+        // initialize the vertex ai
+        const vertexAI = new VertexAI({ 
+                                project: process.env.PROJECT_ID, 
+                                location: process.env.LOCATION, 
+                                googleAuthOptions: { credentials: serviceAccount }});
 
-        // // initialize the genai model using vertexai
-        // const generativeModel = vertexAI.getGenerativeModel({ model: process.env.MODEL })
+        // initialize the genai model using vertexai
+        const generativeModel = vertexAI.getGenerativeModel({ model: process.env.MODEL });
 
         // define the prompt
         const prompt = process.env.PROMPT + userMessage;
 
         // get response from model
-        const result = await model.generateContent(prompt);
-        const botResponse = result.response.text();
+        // const result = await model.generateContent(prompt);
+        // const botResponse = result.response.text();
         // get resopnse from the model
-        // const result = await generativeModel.generateContent(prompt);
+        const result = await generativeModel.generateContent(prompt);
         // console.log('res,', result)
-        // const botResponse = result.response.candidates[0].content.parts[0].text;
+        const botResponse = result.response.candidates[0].content.parts[0].text;
 
         // get the buffer for text by calling the function
         const audioBuffer = await generateSpeechBuffer(botResponse);
