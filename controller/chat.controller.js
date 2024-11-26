@@ -1,5 +1,5 @@
+import { appendChatToPDF, generateSpeechBuffer, storeUserChat } from '../utils/helper.js';
 import serviceAccount from '../service_account.json' assert { type: 'json' };
-import { appendChatToPDF, generateSpeechBuffer } from '../utils/helper.js';
 import { VertexAI } from '@google-cloud/vertexai';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -43,6 +43,9 @@ export async function getResponse(req, res) {
 
         // use function to save it in pdf
         appendChatToPDF(userMessage, botResponse);
+
+        // function to store the chat hostory
+        storeUserChat(userMessage, botResponse);
 
         // return the response as json
         return res.status(200).json({ success: true, botResponse: botResponse, audioContent: audioBuffer });

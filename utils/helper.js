@@ -27,14 +27,15 @@ const storage = new Storage({
     keyFilename: path.join(__dirname, '../service_account.json') 
 });
 
+// define JSON to store questin and answer
+export let chatHistory = [];
+
 // function to add the user chat into a PDF
 export async function appendChatToPDF(question, answer) {
     try {
-        // Get the PDF file from the session folder
         const sessionFolderPath = path.resolve('./session');
         const files = fs.readdirSync(sessionFolderPath);
 
-        // Find the first PDF file in the session folder
         const pdfFiles = files.filter(file => file.endsWith('.pdf'));
         if (pdfFiles.length === 0) {
             throw new Error('No PDF files found in the session folder.');
@@ -44,65 +45,128 @@ export async function appendChatToPDF(question, answer) {
         const existingPdfBytes = fs.readFileSync(filePath);
         const pdfDoc = await PDFDocument.load(existingPdfBytes);
 
-        const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-        const timesBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+        const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const helveticaBoldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-        // Create a new page for each question-answer pair
+        const logoBytes = fs.readFileSync('./assets/MSXi_Logo_Final.png');
+        const logoImage = await pdfDoc.embedPng(logoBytes);
+        const logoDims = logoImage.scale(0.15); 
+
         const newPage = pdfDoc.addPage();
         const { width, height } = newPage.getSize();
 
-        // Define the text content
-        const text = `**Question:** ${question}\n**Answer:** ${answer}`;
-        let y = height - 60; // Start 60 units from the top
-        const lineHeight = 20; // Adjust line height for larger font
-        const maxLineWidth = width - 80; // Leave 40 units padding on each side
-
-        text.split('\n').forEach((line) => {
-            const isBold = line.startsWith('**') && line.endsWith('**');
-            const content = line.replace(/\*\*/g, ''); // Remove '**' markers
-            const font = isBold ? timesBoldFont : timesRomanFont;
-
-            // Word-wrap logic to split long lines
-            const words = content.split(' ');
-            let lineToDraw = '';
-
-            words.forEach((word) => {
-                const testLine = lineToDraw + word + ' ';
-                const textWidth = font.widthOfTextAtSize(testLine, 16); // Adjust for 16 font size
-
-                if (textWidth > maxLineWidth) {
-                    newPage.drawText(lineToDraw.trim(), {
-                        x: 40, // Align text with left padding
-                        y,
-                        size: 16, // Set font size to 16
-                        font,
-                        color: rgb(0, 0, 0),
-                    });
-                    y -= lineHeight;
-                    lineToDraw = word + ' ';
-                } else {
-                    lineToDraw = testLine;
-                }
-            });
-
-            if (lineToDraw) {
-                newPage.drawText(lineToDraw.trim(), {
-                    x: 40, // Align text with left padding
-                    y,
-                    size: 16, // Set font size to 16
-                    font,
-                    color: rgb(0, 0, 0),
-                });
-                y -= lineHeight;
-            }
+        //  border
+        newPage.drawRectangle({
+            x: 20,
+            y: 20,
+            width: width - 40,
+            height: height - 40,
+            borderColor: rgb(0, 0, 0),
+            borderWidth: 2,
         });
 
-        // Save and write the modified PDF
+        //  logo
+        newPage.drawImage(logoImage, {
+            x: 30,
+            y: 30,
+            width: logoDims.width,
+            height: logoDims.height,
+        });
+
+        // remove symbols from text
+        const sanitizedQuestion = question.replace(/\n/g, ' ').trim();
+        const sanitizedAnswer = answer.replace(/\n/g, ' ').trim();
+
+        // add bold for question heading
+        let y = height - 60; 
+        newPage.drawText(`Question:`, {
+            x: 40,
+            y,
+            size: 14,
+            font: helveticaBoldFont,
+            color: rgb(0, 0, 0),
+        });
+
+        // add question text
+        y -= 20; 
+        newPage.drawText(sanitizedQuestion, {
+            x: 40,
+            y,
+            size: 14,
+            font: helveticaFont,
+            color: rgb(0, 0, 0),
+        });
+
+        // add bold for answer heading
+        y -= 40; 
+        newPage.drawText(`Answer:`, {
+            x: 40,
+            y,
+            size: 14,
+            font: helveticaBoldFont,
+            color: rgb(0, 0, 0),
+        });
+
+        // word wrap for answer alignment
+        const maxLineWidth = width - 80; 
+        const answerWords = sanitizedAnswer.split(' ');
+        let currentLine = '';
+        let currentY = y - 20;
+
+        for (const word of answerWords) {
+            const testLine = currentLine ? currentLine + ' ' + word : word;
+            
+            try {
+                const textWidth = helveticaFont.widthOfTextAtSize(testLine, 14);
+
+                if (textWidth > maxLineWidth) {
+                    // Draw current line
+                    newPage.drawText(currentLine, {
+                        x: 40,
+                        y: currentY,
+                        size: 14,
+                        font: helveticaFont,
+                        color: rgb(0, 0, 0),
+                    });
+                    currentY -= 20; 
+                    currentLine = word;
+                } else {
+                    currentLine = testLine;
+                }
+            } catch (encodeError) {
+                console.warn(`Skipping problematic character in word: ${word}`);
+                continue;
+            }
+        }
+
+        // Draw any remaining text
+        if (currentLine) {
+            newPage.drawText(currentLine, {
+                x: 40,
+                y: currentY,
+                size: 14,
+                font: helveticaFont,
+                color: rgb(0, 0, 0),
+            });
+        }
+
+        // page numbers
+        const totalPages = pdfDoc.getPageCount();
+        pdfDoc.getPages().forEach((page, index) => {
+            page.drawText(`Page ${index + 1} of ${totalPages}`, {
+                x: width / 2 - 20,
+                y: 30,
+                size: 12,
+                font: helveticaFont,
+                color: rgb(0, 0, 0),
+            });
+        });
+
         const modifiedPdfBytes = await pdfDoc.save();
         fs.writeFileSync(filePath, modifiedPdfBytes);
-        console.log('Chat added to PDF successfully with neat alignment and larger font size');
+        console.log('Chat added to PDF successfully with logo, border, and page numbers.');
     } catch (error) {
-        console.error('Error while appending chat to PDF', error);
+        console.error('Error while appending chat to PDF:', error);
     }
 }
 
@@ -175,61 +239,112 @@ export async function deletePDF() {
 // add dealer info to pdf
 export async function appendDealerInfoToPDF(dealerName, dealerInfo, dealerNumber) {
     try {
-        // Generate a timestamp and construct the new PDF filename
         const timestamp = Date.now();
         const pdfFilename = `userSession_${timestamp}.pdf`;
         const pdfPath = path.resolve(`./session/${pdfFilename}`);
 
-        // Create a new PDF document
         const pdfDoc = await PDFDocument.create();
+        const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const helveticaBoldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+        const logoBytes = fs.readFileSync('assets/MSXi_Logo_Final.png');
+        const logoImage = await pdfDoc.embedPng(logoBytes);
 
-        // Embed the Times Roman font
-        const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+        const page = pdfDoc.addPage();
+        const { width, height } = page.getSize();
 
-        // Add an empty first page
-        pdfDoc.addPage();
-
-        // Add a second page for dealer info
-        const secondPage = pdfDoc.addPage();
-        const { width, height } = secondPage.getSize();
-
-        // Set font size and line height
-        const fontSize = 16;
-        const lineHeight = fontSize + 4;
-
-        // Prepare the text content for the dealer information
-        const dealerInfoLines = [
-            `Dealer Name: ${dealerName}`,
-            `Dealer Info: ${dealerInfo}`,
-            `Dealer Number: ${dealerNumber}`,
-        ];
-
-        // Define the starting position for text
-        let y = height - 50; // Start 50 points from the top
-        const x = 50; // Margin from the left
-
-        // Add each line of dealer information to the page
-        dealerInfoLines.forEach((line) => {
-            secondPage.drawText(line, {
-                x,
-                y,
-                size: fontSize,
-                font: timesRomanFont,
-                color: rgb(0, 0, 0),
-            });
-            y -= lineHeight; // Move down for the next line
+        // Draw a single outer border
+        page.drawRectangle({
+            x: 20,
+            y: 20,
+            width: width - 40,
+            height: height - 40,
+            borderColor: rgb(0, 0, 0),
+            borderWidth: 2,
         });
 
-        // Save the modified PDF
+        // Add current date and time
+        const currentDateTime = new Date().toLocaleString();
+
+        // Add a centered main heading
+        const headingText = "Chat Report";
+        const headingFontSize = 18;
+        const headingWidth = helveticaBoldFont.widthOfTextAtSize(headingText, headingFontSize);
+
+        page.drawText(headingText, {
+            x: (width - headingWidth) / 2, // Center-align
+            y: height - 50, // Position 50 units below the top
+            size: headingFontSize,
+            font: helveticaBoldFont,
+            color: rgb(0, 0, 0),
+        });
+
+        // Add date and time below the heading
+        const dateTimeFontSize = 14;
+        const dateTimeWidth = helveticaFont.widthOfTextAtSize(currentDateTime, dateTimeFontSize);
+
+        page.drawText(currentDateTime, {
+            x: (width - dateTimeWidth) / 2, // Center-align
+            y: height - 75, // Position below the heading
+            size: dateTimeFontSize,
+            font: helveticaFont,
+            color: rgb(0, 0, 0),
+        });
+
+        // Add logo at the bottom-left corner
+        const logoDims = logoImage.scale(0.15); // Scale logo to appropriate size
+        page.drawImage(logoImage, {
+            x: 30, // Offset from the left border
+            y: 30, // Offset from the bottom border
+            width: logoDims.width,
+            height: logoDims.height,
+        });
+
+        // Add dealer info above the logo with bold headings
+        const dealerInfoLines = [
+            { label: 'Dealer Name:', value: dealerName },
+            { label: 'Dealer Info:', value: dealerInfo },
+            { label: 'Dealer Number:', value: dealerNumber },
+        ];
+
+        let y = height - 120; // Start 120 units below the top border
+
+        dealerInfoLines.forEach(({ label, value }) => {
+            // Draw bold label (heading)
+            page.drawText(label, {
+                x: 40, // Align text with left border
+                y,
+                size: 14,
+                font: helveticaBoldFont, // Use bold font for headings
+                color: rgb(0, 0, 0),
+            });
+
+            // Draw regular value
+            page.drawText(value, {
+                x: 160, // Position value to the right of the label
+                y,
+                size: 14,
+                font: helveticaFont, // Use regular font for values
+                color: rgb(0, 0, 0),
+            });
+
+            y -= 20; // Move to the next line
+        });
+
+        // Add page number
+        page.drawText('Page 1', {
+            x: width / 2 - 20, // Center-align the page number
+            y: 30, // Place above the bottom border
+            size: 12,
+            font: helveticaFont,
+            color: rgb(0, 0, 0),
+        });
+
         const pdfBytes = await pdfDoc.save();
         fs.writeFileSync(pdfPath, pdfBytes);
-        console.log('Dealer Info saved to:', pdfFilename);
-
-        // Return the path of the saved PDF
+        console.log('Dealer Info PDF saved to:', pdfFilename);
         return pdfPath;
-
     } catch (error) {
-        console.error('Error while creating PDF with dealer info:', error);
+        console.error('Error creating PDF:', error);
         throw error;
     }
 }
@@ -281,7 +396,7 @@ export async function generateSpeechBuffer(text) {
 // function to store the chat into a JSON array
 export async function storeUserChat(quesiton, answer) {
     try {
-        
+        chatHistory.push({ quesiton: quesiton, answer: answer });
     } catch(err) {
         console.error('Error while storing chat into JSON array', err);
     }

@@ -1,4 +1,5 @@
 import { enableCORS, deletePDF, clearPDF, getPdfFileNames } from '../utils/helper.js';
+import { chatHistory } from '../utils/helper.js';
 import { Storage } from '@google-cloud/storage';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -55,7 +56,7 @@ export async function uploadSession(req, res) {
 
         if (latestFile) {
             const fileUrl = `https://storage.googleapis.com/${bucketName}/${latestFile.name}`;
-            return res.status(201).json({ success: true, message: 'File successfully uploaded', url: fileUrl });
+            return res.status(201).json({ success: true, message: 'File successfully uploaded', url: fileUrl, chatHistory: chatHistory });
         } else {
             throw new Error('Unable to fetch the uploaded file details.');
         }
